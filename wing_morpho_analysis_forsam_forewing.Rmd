@@ -1,0 +1,659 @@
+---
+title: "Bee analysis test"
+author: "Eddy Dowle"
+date: "2025-05-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(geomorph)
+#setwd("C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing")
+```
+
+## Geomorph
+Using Geomorph package to do a generalized procrustes analysis on the TPS file and run basic statistics/plots. Not very familiar with the package so Im only using a very small subset of it and Im not convinced that I have everything correct/done in the best way (its been 15 years since I did this). 
+
+```{r gpaallpoints}
+#bring in TPS file
+bees<-readland.tps('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Forewing_file_tps_dig_15_05_2025_1_renamed.TPS',specID = 'imageID')
+#col_bees<-read.csv('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/bee_colours.csv')
+#generate a file of species names for each sample etc for plotting
+Sample_names<-labels(bees)[[3]]
+#Sample_names<-gsub('.*\\\\','',Sample_names)
+species_list<-gsub('_.*','',Sample_names)
+#species_list<-gsub('L.Kanap','L.kanap',species_list)
+unique(species_list)
+#do a generalixed procrustes analysis on TPS
+beesgpa<-gpagen(bees)
+#checking procrustes fit
+#plot before procrustes
+plot(bees)
+#plot after procrustes
+plot(beesgpa)
+#the first point looks very dodgy
+PCA<-gm.prcomp(beesgpa$coords)
+plot(PCA)
+#thats all just those varable ones on the first point
+plotOutliers(beesgpa$coords)
+```
+
+## Dropping first point
+That first point just isnt stable so think we can drop it form now on. 
+
+```{r gpadropfirst}
+bees_removefirst <- bees[-1,,] 
+beesgpa<-gpagen(bees_removefirst)
+#looks more stable
+plot(beesgpa)
+#plot outliers
+plotOutliers(beesgpa$coords)
+#run PCA analysis
+PCA<-gm.prcomp(beesgpa$coords)
+#plot(PCA)
+#plot with legend
+PCaxis<-as.data.frame(PCA$x[,1:2])
+PCaxis<-rownames_to_column(PCaxis,var='ID')
+PCaxis$bee_species<-gsub('_.*','',PCaxis$ID)
+
+#set colours
+col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink"))
+names(col)<-as.character(unique(PCaxis$bee_species))
+col
+#extract PC % from sdev
+PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
+PC2_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[2,1]*100,digits=2)
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=2)+
+  theme_bw()+
+  scale_color_manual(values=col)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#
+```
+
+## Within Leioproctus Leioproctus
+Just wanted to have a quick look just within leioproctus leiopructus as I notice on the PCA most of the variaiton is just between Neso species and Leio species
+
+
+```{r gpaleio}
+#just looking with in leioproctus (plus monticola)
+#fulvesencs and paahua are quite different
+#redo procrustes just with Leioproctus leioproctus species (plus monitola)
+bees_leioproctus <- bees[,,-c(11:15,31:35)] 
+bees_leioproctus <- bees_leioproctus[-1,,] 
+beesgpa_leio<-gpagen(bees_leioproctus)
+Sample_names_leio<-labels(bees_leioproctus)[[3]]
+Sample_names_leio<-gsub('.*\\\\','',Sample_names_leio)
+species_list_leio<-gsub('_.*','',Sample_names_leio)
+species_list_leio<-gsub('L.Kanap','L.kanap',species_list_leio)
+
+unique(species_list_leio)
+
+plot(beesgpa_leio)
+#plot outliers
+plotOutliers(beesgpa_leio$coords)
+#run PCA analysis
+PCA<-gm.prcomp(beesgpa_leio$coords)
+#summary(PCA)
+#plot(PCA)
+#plot with legend
+PCaxis<-as.data.frame(PCA$x[,1:2])
+PCaxis<-rownames_to_column(PCaxis,var='ID')
+PCaxis$bee_species<-gsub('_.*','',PCaxis$ID)
+
+PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
+PC2_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[2,1]*100,digits=2)
+
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=2)+
+  theme_bw()+
+  scale_color_manual(values=col)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#
+```
+
+## Shape variation
+Just plotting out the shape shift of each species
+
+```{r shapevar}
+#shape change species compared to average
+ref<-mshape(beesgpa$coords)
+species_list
+
+#bring in links file for plotting
+bee_links<-read.table('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing/links_all_landmarks_remove1_sam.txt',sep=',',header=F)
+
+#nesocoletes (note average is average across all Leioproctus sp. just grouped for veiwing)
+#paahua
+gpl.mn<-mshape(beesgpa$coords[,,31:35])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#fulv
+gpl.mn<-mshape(beesgpa$coords[,,c(11:15)])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#leioproctus leioproctus
+#mont
+gpl.mn<-mshape(beesgpa$coords[,,2:6])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#bolt
+gpl.mn<-mshape(beesgpa$coords[,,c(1,7:10)])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+
+#huakiwi
+gpl.mn<-mshape(beesgpa$coords[,,16:20])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#imat
+gpl.mn<-mshape(beesgpa$coords[,,21:25])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#kanap
+gpl.mn<-mshape(beesgpa$coords[,,26:30])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#pango
+gpl.mn<-mshape(beesgpa$coords[,,36:40])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#vest
+gpl.mn<-mshape(beesgpa$coords[,,41:45])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#
+```
+
+## Running some tests
+Im not familar with geomorph so this is largely taken from the tutorial online
+
+## Relationship between size and shape
+
+```{R geomorphstats}
+#check if there is a relationship between size and shape
+#just having a look at raw csize
+#kanap seem largest in general for forewing
+size<-as.data.frame(beesgpa$Csize)
+arrange(size,desc(size$`beesgpa$Csize`)) #%>% print(n=nrow(.))
+gdf<-geomorph.data.frame(beesgpa,species=species_list)
+fit.size<-procD.lm(coords~log(Csize), data = gdf, print.progress=F)
+summary(fit.size)
+#is a significant relationship between size and shape
+#visiualise
+#plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='PredLine',col=as.factor(species_list),pch=19)
+#plot with legend etc
+p<-plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='PredLine')
+p<-cbind(as.data.frame(p$plot_args$x),as.data.frame(p$plot_args$y))
+names(p)[names(p) == 'p$plot_args$x'] <- 'PredLine'
+names(p)[names(p) == 'p$plot_args$y'] <- 'PC1'
+p<-rownames_to_column(p,var='ID')
+p$bee_species<-gsub('_.*','',p$ID)
+
+ggplot(p,aes(x=PredLine,y=PC1,colour = bee_species))+
+  geom_point(size=2) +
+  theme_bw()+
+  scale_color_manual(values=col)+
+  labs(colour='Species',x='Predictor',y='PC1 for fitted values')
+
+#same thing here:
+#plot(fit.size,type='regression',reg.type="PredLine", predictor =log(gdf$Csize))
+#first principal component scores fitted values - PredLine
+
+#regression scores-standardised regression shapes 
+#plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='RegScore',col=as.factor(species_list),pch=19)
+#plot with legend etc
+p<-plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='RegScore')
+p<-cbind(as.data.frame(p$plot_args$x),as.data.frame(p$plot_args$y))
+names(p)[names(p) == 'p$plot_args$x'] <- 'PredLine'
+names(p)[names(p) == 'V1'] <- 'RegScore'
+p<-rownames_to_column(p,var='ID')
+p$bee_species<-gsub('_.*','',p$ID)
+
+ggplot(p,aes(x=PredLine,y=RegScore,colour = bee_species))+
+  geom_point(size=2)+
+  theme_bw()+
+  scale_color_manual(values=col)+
+  labs(colour='Species',x='Predictor',y='Regression Score')
+
+#partial least squares for relationship between shape and size
+PLS<-two.b.pls(log(gdf$Csize),gdf$coords,print.progress=F)
+PLS
+#
+```
+
+## Relationship between size, shape and species
+using Procrustes ANOVA/regression. Not convienced that I have this right and that this is the best way in regards to the posthoc pairwise tests. There is another function which I havent really explored that might be better for this. 
+
+```{R geomorphstats2}
+#look at the influence of shape, size and species
+fit.common<-procD.lm(coords~log(Csize)+species,data=gdf)
+summary(fit.common)
+PW<-pairwise(fit.common,groups=species_list)
+summary(PW)
+#relationship between size and species
+fit1<-procD.lm(log(gdf$Csize)~species_list)
+summary(fit1)
+PW<-pairwise(fit1,groups=species_list)
+summary(PW)
+#relationship between shape and species
+fit2<-procD.lm(gdf$coords~species_list)
+summary(fit2)
+PW<-pairwise(fit2,groups=species_list)
+summary(PW)
+#interaction model - shape differ between species, while accounting for shape co varying with size
+#not convinced I have this model right, I think its an over simplification
+fit3<-procD.lm(gdf$coords ~log(gdf$Csize)*species_list)
+summary(fit3)
+#posthoc test between groups
+PW<-pairwise(fit3,groups=species_list)
+summary(PW)
+#
+```
+
+## Hind wing analysis
+Same but on hind wing
+
+```{r gpaallpoints_hind}
+#bring in TPS file
+bees<-readland.tps('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Hindwings_merged_cleaned_19_05_2025.TPS',specID = 'imageID')
+
+#generate a file of species names for each sample etc for plotting
+Sample_names<-labels(bees)[[3]]
+Sample_names
+#Sample_names<-gsub('.*\\\\','',Sample_names)
+#Sample_names<-sub("([A-Za-z].[A-Za-z]+_[0-9]+).*", "\\1", Sample_names)
+species_list<-gsub('_.*','',Sample_names)
+#species_list<-gsub('L.Kanap','L.kanap',species_list)
+unique(species_list)
+#do a generalixed procrustes analysis on TPS
+beesgpa<-gpagen(bees)
+#checking procrustes fit
+#plot before procrustes
+plot(bees)
+#plot after procrustes
+plot(beesgpa)
+#plot outliers
+plotOutliers(beesgpa$coords)
+#the first point looks very dodgy
+PCA<-gm.prcomp(beesgpa$coords)
+plot(PCA)
+#thats all just those varable ones on the first point again so doesnt work on either fore or hind wing for point 1
+```
+
+## Dropping first point
+That first point just isnt stable so think we can drop it form now on. 
+
+```{r gpadropfirst_hind}
+bees_removefirst <- bees[-1,,] 
+beesgpa<-gpagen(bees_removefirst)
+#looks more stable
+plot(beesgpa)
+#plot outliers
+plotOutliers(beesgpa$coords)
+#run PCA analysis
+PCA<-gm.prcomp(beesgpa$coords)
+#plot(PCA)
+#plot with legend
+PCaxis<-as.data.frame(PCA$x[,1:2])
+PCaxis<-rownames_to_column(PCaxis,var='ID')
+PCaxis$bee_species<-gsub('_.*','',PCaxis$ID)
+
+#set colours
+col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink"))
+names(col)<-as.character(unique(PCaxis$bee_species))
+col
+#extract PC % from sdev
+PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
+PC2_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[2,1]*100,digits=2)
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=2)+
+  theme_bw()+
+  scale_color_manual(values=col)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#
+```
+
+## Within Leioproctus Leioproctus
+Just wanted to have a quick look just within leioproctus leiopructus (plus monitcola) as I notice on the PCA most of the variaiton is just between two neso species and Leio species (plus monitcola)
+
+
+```{r gpaleio_hind}
+#just looking with in leioproctus
+#I think fulvesencs and paahua are only neso but could be wrong
+#redo procrustes just with Leioproctus leioproctus species
+Sample_names
+bees_leioproctus <- bees[,,-c(11:15,31:35)] 
+bees_leioproctus <- bees_leioproctus[-1,,] 
+beesgpa_leio<-gpagen(bees_leioproctus)
+Sample_names_leio<-labels(bees_leioproctus)[[3]]
+Sample_names_leio<-gsub('.*\\\\','',Sample_names_leio)
+species_list_leio<-gsub('_.*','',Sample_names_leio)
+species_list_leio<-gsub('L.Kanap','L.kanap',species_list_leio)
+
+unique(species_list_leio)
+
+plot(beesgpa_leio)
+#plot outliers
+plotOutliers(beesgpa_leio$coords)
+#run PCA analysis
+PCA<-gm.prcomp(beesgpa_leio$coords)
+#summary(PCA)
+#plot(PCA)
+#plot with legend
+PCaxis<-as.data.frame(PCA$x[,1:2])
+PCaxis<-rownames_to_column(PCaxis,var='ID')
+PCaxis$bee_species<-gsub('_.*','',PCaxis$ID)
+
+PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
+PC2_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[2,1]*100,digits=2)
+
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=2)+
+  theme_bw()+
+  scale_color_manual(values=col)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#
+```
+
+## Shape variation
+Just plotting out the shape shift of each species
+
+```{r shapevar_hind}
+#shape change species compared to average
+ref<-mshape(beesgpa$coords)
+species_list
+
+#bring in links file for plotting
+bee_links<-read.table('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing/links_all_landmarks_remove1_sam_hind.txt',sep=',',header=F)
+
+#nesocoletes (note average is average across all Leioproctus sp. just grouped for veiwing)
+#paahua
+gpl.mn<-mshape(beesgpa$coords[,,31:35])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#fulv
+gpl.mn<-mshape(beesgpa$coords[,,c(11:15)])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#mont
+gpl.mn<-mshape(beesgpa$coords[,,2:6])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#leioproctus leioproctus
+#bolt
+gpl.mn<-mshape(beesgpa$coords[,,c(1,7:10)])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#huakiwi
+gpl.mn<-mshape(beesgpa$coords[,,16:20])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#imat
+gpl.mn<-mshape(beesgpa$coords[,,21:25])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#kanap
+gpl.mn<-mshape(beesgpa$coords[,,26:30])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#pango
+gpl.mn<-mshape(beesgpa$coords[,,36:40])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#vest
+gpl.mn<-mshape(beesgpa$coords[,,41:45])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#
+```
+
+## Running some tests
+Im not familar with geomorph so this is largely taken from the tutorial online
+
+## Relationship between size and shape
+
+```{R geomorphstats_hind}
+#check if there is a relationship between size and shape
+#just having a look at raw csize
+#size variation for hindwing
+size<-as.data.frame(beesgpa$Csize)
+arrange(size,desc(size$`beesgpa$Csize`)) #%>% print(n=nrow(.))
+#turn that into a barchart when we have enough points per species
+gdf<-geomorph.data.frame(beesgpa,species=species_list)
+fit.size<-procD.lm(coords~log(Csize), data = gdf, print.progress=F)
+summary(fit.size)
+#is a significant relationship between size and shape
+#visiualise
+#plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='PredLine',col=as.factor(species_list),pch=19)
+#plot with legend etc
+p<-plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='PredLine')
+p<-cbind(as.data.frame(p$plot_args$x),as.data.frame(p$plot_args$y))
+names(p)[names(p) == 'p$plot_args$x'] <- 'PredLine'
+names(p)[names(p) == 'p$plot_args$y'] <- 'PC1'
+p<-rownames_to_column(p,var='ID')
+p$bee_species<-gsub('_.*','',p$ID)
+
+ggplot(p,aes(x=PredLine,y=PC1,colour = bee_species))+
+  geom_point(size=2) +
+  theme_bw()+
+  scale_color_manual(values=col)+
+  labs(colour='Species',x='Predictor',y='PC1 for fitted values')
+
+#same thing here:
+#plot(fit.size,type='regression',reg.type="PredLine", predictor =log(gdf$Csize))
+#first principal component scores fitted values - PredLine
+
+#regression scores-standardised regression shapes 
+#plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='RegScore',col=as.factor(species_list),pch=19)
+#plot with legend etc
+p<-plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='RegScore')
+p<-cbind(as.data.frame(p$plot_args$x),as.data.frame(p$plot_args$y))
+names(p)[names(p) == 'p$plot_args$x'] <- 'PredLine'
+names(p)[names(p) == 'V1'] <- 'RegScore'
+p<-rownames_to_column(p,var='ID')
+p$bee_species<-gsub('_.*','',p$ID)
+
+ggplot(p,aes(x=PredLine,y=RegScore,colour = bee_species))+
+  geom_point(size=2)+
+  theme_bw()+
+  scale_color_manual(values=col)+
+  labs(colour='Species',x='Predictor',y='Regression Score')
+
+#partial least squares for relationship between shape and size
+PLS<-two.b.pls(log(gdf$Csize),gdf$coords,print.progress=F)
+PLS
+#
+```
+
+## Relationship between size, shape and species
+using Procrustes ANOVA/regression. Not convienced that I have this right and that this is the best way in regards to the posthoc pairwise tests. There is another function which I havent really explored that might be better for this. 
+
+```{R geomorphstats2_hind}
+#look at the influence of shape, size and species
+fit.common<-procD.lm(coords~log(Csize)+species,data=gdf)
+summary(fit.common)
+PW<-pairwise(fit.common,groups=species_list)
+summary(PW)
+#relationship between size and species
+fit1<-procD.lm(log(gdf$Csize)~species_list)
+summary(fit1)
+PW<-pairwise(fit1,groups=species_list)
+summary(PW)
+#relationship between shape and species
+fit2<-procD.lm(gdf$coords~species_list)
+summary(fit2)
+PW<-pairwise(fit2,groups=species_list)
+summary(PW)
+#interaction model - shape differ between species, while accounting for shape co varying with size
+#not convinced I have this model right, I think its an over simplification
+fit3<-procD.lm(gdf$coords ~log(gdf$Csize)*species_list)
+summary(fit3)
+#posthoc test between groups
+PW<-pairwise(fit3,groups=species_list)
+summary(PW)
+#
+```
+
+There is bunch of other functions in geomorph, including morphol.dispartiy which I havent really figured out. I need to read the guide properly and relearn some geometrics. And there is another package morpho in R which I havent looked into. 
+
+## Testing merging fore and hind wing
+
+Just trying this out
+
+```{R merge_foreandhind}
+#forewing
+bees_fore<-readland.tps('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Forewing_file_tps_dig_15_05_2025_1_renamed.TPS',specID = 'imageID')
+Sample_names<-labels(bees_fore)[[3]]
+species_list<-gsub('_.*','',Sample_names)
+unique(species_list)
+bees_fore_removefirst <- bees_fore[-1,,] 
+beesgpa_fore<-gpagen(bees_fore_removefirst)
+#hindwing
+bees_hind<-readland.tps('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Hindwings_merged_cleaned_19_05_2025.TPS',specID = 'imageID')
+Sample_names<-labels(bees_hind)[[3]]
+species_list<-gsub('_.*','',Sample_names)
+unique(species_list)
+bees_hind_removefirst <- bees_hind[-1,,] 
+beesgpa_hind<-gpagen(bees_hind_removefirst)
+#combining
+?combine.subsets
+for_lab<-labels(beesgpa_fore$coords)[[3]]
+hin_lab<-labels(beesgpa_hind$coords)[[3]]
+match(for_lab,hin_lab)
+#so ordered the same
+#cant find a way to keep the names during the merge but I assume they add in by raw order? Might have to check this with package authors
+#seems to be an active google groups page
+#this combines with SCS or standard centroid size (but Im not sure if that is cs or relcs in the output)
+comb.lm <- combine.subsets(forewing= beesgpa_fore, hindwing = beesgpa_hind, gpa = TRUE)
+summary(comb.lm)
+#just kinda plonks them on top of each other
+plotAllSpecimens(comb.lm$coords)
+#so it just plonks them on top of each other, visualised here with black and red
+plot(comb.lm$coords[,,1], pch=21, bg = c(rep(1,18), rep(2,7)),asp =1,cex=1.5)
+#
+```
+
+## Stats on combined data points
+
+Im not familiar with this approach.
+I found this which goes into it a bit https://github.com/DworkinLab/VirtualMorphoMeetup/blob/master/combine.subsets.talk/heads.or.tails.combined.landmarks.md
+and suggests reading 
+https://faculty.sites.iastate.edu/dcadams/files/inline-files/2020-evolbiol-collyer_et_al.pdf
+
+"We recommend that empiricists neither perform GPA on combined confgurations, nor consider combined confgurations to be organismal “shape”. Rather, combined confgurations are shape composites which can be disjoined for the purpose of shape visualisation, but used in conjuction for statistical analyses'
+
+So we cant draw out any changes but can analyse things statistically I think
+
+https://onlinelibrary.wiley.com/doi/full/10.1002/jmor.21516
+https://github.com/corinthiablack/Chew-on-this_Raw-data has some analyses with it
+
+```{R merge_foreandhind_stats}
+#run PCA analysis
+PCA<-gm.prcomp(comb.lm$coords)
+gm.prcomp(comb.lm$GPA)
+#comb.lm$coords
+#summary(PCA)
+plot(PCA)
+#plot with legend
+PCaxis<-as.data.frame(PCA$x[,1:2])
+#no names in data
+PCaxis$ID<-for_lab
+#PCaxis<-rownames_to_column(PCaxis,var='ID')
+PCaxis$bee_species<-gsub('_.*','',PCaxis$ID)
+
+PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
+PC2_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[2,1]*100,digits=2)
+
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=2)+
+  theme_bw()+
+  scale_color_manual(values=col)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#
+```
+
+## Stuck
+Im not confident in the way to analyse the combined dataset
+
+```{R geomorphstats_hindfor_merged}
+#check if there is a relationship between size and shape
+#just having a look at raw csize
+#size variation for hindwing
+size<-as.data.frame(comb.lm$CS)
+#weird c-size came out with a name here, maybe its a bug that the coords are unnamed?
+arrange(size,desc(size$forewing)) #%>% print(n=nrow(.))
+#this doesnt work:
+#gdf<-geomorph.data.frame(comb.lm,species=species_list)
+#can bring it in seperatly like this
+gdf<-geomorph.data.frame(Coords=comb.lm$coords,species=species_list)
+#and even if it did I dont know how to deal with the allometry for the combined dataset as each sample has two csize values etc. So would it just be a shape ~species model  
+fit<-procD.lm(Coords~species,data=gdf)
+summary(fit)
+PW<-pairwise(fit,groups=species_list)
+summary(PW)
+
+#can bring in cs and relcs seperatly too
+gdf<-geomorph.data.frame(Coords=comb.lm$coords,relcs=comb.lm$rel.CS,cs=comb.lm$CS,species=species_list)
+
+#But I dont know how to deal with the allometry for the combined dataset as each sample has two csize values etc. So would it just be a shape ~ species and size ~ species model?
+
+#look at the influence of shape, size and species
+#size and species using relative size
+#I think this is SCS or standardised CS but Im not 100% sure its poorly described
+fit1<-procD.lm(log(relcs)~species,data=gdf)
+summary(fit1)
+PW<-pairwise(fit1,groups=species_list)
+summary(PW)
+#size and species using raw cs
+fit.common<-procD.lm(log(cs)~species,data=gdf)
+summary(fit.common)
+PW<-pairwise(fit.common,groups=species_list)
+summary(PW)
+#shape and species
+fit<-procD.lm(Coords~species,data=gdf)
+summary(fit)
+PW<-pairwise(fit,groups=species_list)
+summary(PW)
+#cant do size and shape and species
+#fit<-procD.lm(Coords~log(cs)+species,data=gdf)
+#summary(fit)
+#PW<-pairwise(fit,groups=species_list)
+#summary(PW)
+
+#I dont understand the difference between cs and relcs
+#cant do size and shape and species
+#fit<-procD.lm(Coords~log(relcs)+species,data=gdf)
+#summary(fit)
+#PW<-pairwise(fit,groups=species_list)
+#summary(PW)
+#
+```
