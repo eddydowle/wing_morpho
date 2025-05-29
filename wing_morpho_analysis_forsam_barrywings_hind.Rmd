@@ -1,5 +1,5 @@
 ---
-title: "Bee analysis test"
+title: "Bee analysis test hind"
 author: "Eddy Dowle"
 date: "2025-05-15"
 output: html_document
@@ -17,7 +17,7 @@ Using Geomorph package to do a generalized procrustes analysis on the TPS file a
 
 ```{r gpaallpoints}
 #bring in TPS file
-bees<-readland.tps('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Forewings_19_05_2025_29_05_25merged_ejd.TPS',specID = 'imageID',negNA = TRUE)
+bees<-readland.tps('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Hindwingd_from19_05_20_cleaned-27_05_25_ejd.TPS',specID = 'imageID',negNA = TRUE)
 #col_bees<-read.csv('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/bee_colours.csv')
 #generate a file of species names for each sample etc for plotting
 Sample_names<-labels(bees)[[3]]
@@ -44,13 +44,16 @@ plotOutliers(beesgpa$coords)
 PCaxis<-as.data.frame(PCA$x[,1:2])
 PCaxis<-rownames_to_column(PCaxis,var='ID')
 PCaxis$bee_species<-gsub('_.*','',PCaxis$ID)
+
 #set colours
 as.character(unique(PCaxis$bee_species))
 #18 species
 #original colours
 #col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink"))
 col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink",'blue4',"lightpink","coral4","cadetblue","plum1","chartreuse1","lightgoldenrodyellow","grey","lightskyblue"))
-names(col)<-as.character(unique(PCaxis$bee_species))
+names(col)<-as.character(c("L.bolt","L.mont","L.fulv","L.huak","L.imat","L.kanap","L.paahua","L.pango","Vest","L.hudsoni","L.hukare","L.keehua","L.marit","L.metal","L.pekanui","L.purp","L.unknown","L.waipou"))
+#keeping same colour set as for forwing
+#names(col)<-as.character(unique(PCaxis$bee_species))
 col
 #extract PC % from sdev
 PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
@@ -71,7 +74,7 @@ as.character(unique(PCaxis$bee_species))
 as.character(unique(PCaxis$bee_species_baz))
 #20 species
 col_baz<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink",'blue4',"lightpink","coral4","tomato","cadetblue","plum1","burlywood","chartreuse1","lightgoldenrodyellow","grey","lightskyblue"))
-names(col_baz)<-as.character(unique(PCaxis$bee_species_baz))
+names(col_baz)<-as.character(c("L.bolt","L.mont","L.fulv","L.huak","L.imat","L.kanap","L.paahua","L.pango","Vest","L.bolt_Barry","L.hudsoni_Barry","L.hukare_Barry", "L.keehua_Barry","L.marit_Barry","L.metal","L.pango_Barry","L.pekanui_Barry","L.purp_Barry","L.unknown","L.waipou_Barry"))
 col_baz
 #plot
 ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
@@ -178,7 +181,7 @@ ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
 
 #shape extremes in PCA
 #bring in links file for plotting
-bee_links<-read.table('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing/links_all_landmarks_sam.txt',sep=',',header=F)
+bee_links<-read.table('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing/links_all_landmarks_sam_hind.txt',sep=',',header=F)
 #find mean shape
 M<-mshape(beesgpa$coord)
 #find extremes of PC1 (max/min)
@@ -221,7 +224,7 @@ as.character(unique(PCaxis$bee_species))
 #original colours
 #col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink"))
 col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink",'blue4',"lightpink","coral4","cadetblue","plum1","chartreuse1","lightgoldenrodyellow","grey","lightskyblue"))
-names(col)<-as.character(unique(PCaxis$bee_species))
+names(col)<-as.character(c("L.bolt","L.mont","L.fulv","L.huak","L.imat","L.kanap","L.paahua","L.pango","Vest","L.hudsoni","L.hukare","L.keehua","L.marit","L.metal","L.pekanui","L.purp","L.unknown","L.waipou"))
 col
 #extract PC % from sdev
 PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
@@ -242,7 +245,7 @@ as.character(unique(PCaxis$bee_species))
 as.character(unique(PCaxis$bee_species_baz))
 #20 species
 col_baz<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink",'blue4',"lightpink","coral4","tomato","cadetblue","plum1","burlywood","chartreuse1","lightgoldenrodyellow","grey","lightskyblue"))
-names(col_baz)<-as.character(unique(PCaxis$bee_species_baz))
+names(col_baz)<-as.character(c("L.bolt","L.mont","L.fulv","L.huak","L.imat","L.kanap","L.paahua","L.pango","Vest","L.bolt_Barry","L.hudsoni_Barry","L.hukare_Barry", "L.keehua_Barry","L.marit_Barry","L.metal","L.pango_Barry","L.pekanui_Barry","L.purp_Barry","L.unknown","L.waipou_Barry"))
 col_baz
 #plot
 ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
@@ -349,7 +352,7 @@ ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
 
 #shape extremes in PCA
 #bring in links file for plotting
-bee_links<-read.table('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing/links_all_landmarks_remove1_sam.txt',sep=',',header=F)
+bee_links<-read.table('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing/links_all_landmarks_remove1_sam_hind.txt',sep=',',header=F)
 #find mean shape
 M<-mshape(beesgpa$coord)
 #find extremes of PC1 (max/min)
@@ -375,8 +378,8 @@ Just wanted to have a quick look just within leioproctus leiopructus as I notice
 #just looking with in leioproctus (plus monticola)
 #fulvesencs and paahua are quite different
 #redo procrustes just with Leioproctus leioproctus species (plus monitola)
-#Sample_names
-bees_leioproctus <- bees[,,-c(2:6,11:15,31:35,53,56:61,72:73,79:83)] 
+Sample_names
+bees_leioproctus <- bees[,,-c(8,12:16,28:29,35:39,46:50,55:59,75:79)] 
 bees_leioproctus <- bees_leioproctus[-1,,] 
 beesgpa_leio<-gpagen(bees_leioproctus)
 Sample_names_leio<-labels(bees_leioproctus)[[3]]
@@ -409,96 +412,6 @@ ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
 #
 ```
 
-## Shape variation
-Just plotting out the shape shift of each species
-
-```{r shapevar}
-#shape change species compared to average
-ref<-mshape(beesgpa$coords)
-species_list_barry
-
-#nesocoletes (note average is average across all Leioproctus sp. just grouped for veiwing)
-#paahua
-gpl.mn<-mshape(beesgpa$coords[,,31:35])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#fulv
-gpl.mn<-mshape(beesgpa$coords[,,c(11:15)])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#mont
-gpl.mn<-mshape(beesgpa$coords[,,2:6])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#mart barry
-gpl.mn<-mshape(beesgpa$coords[,,57:61])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#pekanui
-gpl.mn<-mshape(beesgpa$coords[,,72:73])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#hudsoni barry
-gpl.mn<-mshape(beesgpa$coords[,,53])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-
-#leioproctus leioproctus
-#bolt
-gpl.mn<-mshape(beesgpa$coords[,,c(1,7:10)])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#bolt barry
-gpl.mn<-mshape(beesgpa$coords[,,c(46:50)])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#huakiwi
-gpl.mn<-mshape(beesgpa$coords[,,c(16:20,51:52)])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#huakiwi barry
-gpl.mn<-mshape(beesgpa$coords[,,54:55])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#imat
-gpl.mn<-mshape(beesgpa$coords[,,21:25])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#kanap
-gpl.mn<-mshape(beesgpa$coords[,,26:30])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#pango
-gpl.mn<-mshape(beesgpa$coords[,,36:40])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#pango barry
-gpl.mn<-mshape(beesgpa$coords[,,68:71])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#vest
-gpl.mn<-mshape(beesgpa$coords[,,41:45])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#purp
-gpl.mn<-mshape(beesgpa$coords[,,74:78])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#waiponamu barry
-gpl.mn<-mshape(beesgpa$coords[,,84:88])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#keehua barry
-gpl.mn<-mshape(beesgpa$coords[,,56])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-#metalicus
-gpl.mn<-mshape(beesgpa$coords[,,62:67])
-#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
-plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
-
-#
-```
 
 ## Running some tests
 Im not familar with geomorph so this is largely taken from the tutorial online
@@ -508,7 +421,7 @@ Im not familar with geomorph so this is largely taken from the tutorial online
 ```{R geomorphstats}
 #check if there is a relationship between size and shape
 #just having a look at raw csize
-#metal, bolt kanap seem largest in general for forewing
+#metal, bolt kanap seem largest in general 
 size<-as.data.frame(beesgpa$Csize)
 arrange(size,desc(size$`beesgpa$Csize`)) #%>% print(n=nrow(.))
 gdf<-geomorph.data.frame(beesgpa,species=species_list_barry)
