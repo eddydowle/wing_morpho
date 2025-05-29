@@ -1,0 +1,589 @@
+---
+title: "Bee analysis test"
+author: "Eddy Dowle"
+date: "2025-05-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(geomorph)
+library(ggrepel)
+#setwd("C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing")
+```
+
+## Geomorph
+Using Geomorph package to do a generalized procrustes analysis on the TPS file and run basic statistics/plots. Not very familiar with the package so Im only using a very small subset of it and Im not convinced that I have everything correct/done in the best way (its been 15 years since I did this). 
+
+```{r gpaallpoints}
+#bring in TPS file
+bees<-readland.tps('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Forewings_19_05_2025_29_05_25merged_ejd.TPS',specID = 'imageID',negNA = TRUE)
+#col_bees<-read.csv('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/bee_colours.csv')
+#generate a file of species names for each sample etc for plotting
+Sample_names<-labels(bees)[[3]]
+#Sample_names<-gsub('.*\\\\','',Sample_names)
+species_list<-gsub('_.*','',Sample_names)
+#species_list<-gsub('L.Kanap','L.kanap',species_list)
+unique(species_list)
+species_list_barry<-gsub('_[0-9].*','',Sample_names)
+unique(species_list_barry)
+#estimate missing
+bees<-estimate.missing(bees, method = "TPS")
+#do a generalixed procrustes analysis on TPS
+beesgpa<-gpagen(bees)
+#checking procrustes fit
+#plot before procrustes
+plot(bees)
+#plot after procrustes
+plot(beesgpa)
+#first point looks lots better now was an issue with the missing data it turns out
+PCA<-gm.prcomp(beesgpa$coords)
+plot(PCA)
+plotOutliers(beesgpa$coords)
+#plot with legend
+PCaxis<-as.data.frame(PCA$x[,1:2])
+PCaxis<-rownames_to_column(PCaxis,var='ID')
+PCaxis$bee_species<-gsub('_.*','',PCaxis$ID)
+
+#set colours
+as.character(unique(PCaxis$bee_species))
+#18 species
+#original colours
+#col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink"))
+col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink",'blue4',"lightpink","coral4","cadetblue","plum1","chartreuse1","lightgoldenrodyellow","grey","lightskyblue"))
+names(col)<-as.character(unique(PCaxis$bee_species))
+col
+#extract PC % from sdev
+PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
+PC2_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[2,1]*100,digits=2)
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species))+
+  theme_bw()+
+  scale_fill_manual(values=col)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#
+#colouring barry's ones seperatly
+#set colours
+PCaxis$bee_species_baz<-gsub('_[0-9].*','',PCaxis$ID)
+as.character(unique(PCaxis$bee_species))
+as.character(unique(PCaxis$bee_species_baz))
+#20 species
+col_baz<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink",'blue4',"lightpink","coral4","tomato","cadetblue","plum1","burlywood","chartreuse1","lightgoldenrodyellow","grey","lightskyblue"))
+names(col_baz)<-as.character(unique(PCaxis$bee_species_baz))
+col_baz
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_baz)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+
+#gods it confusing just comparing barrys to sams
+#boltoni
+col_one<-as.character(ifelse(unique(PCaxis$bee_species_baz) == 'L.bolt','red','grey'))
+names(col_one)<-as.character(unique(PCaxis$bee_species_baz))
+col_one<-replace(col_one, 'L.bolt_Barry', 'green')
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_one)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA boltoni")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+
+#pango
+col_one<-as.character(ifelse(unique(PCaxis$bee_species_baz) == 'L.pango','red','grey'))
+names(col_one)<-as.character(unique(PCaxis$bee_species_baz))
+col_one<-replace(col_one, 'L.pango_Barry', 'green')
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_one)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA pango")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#hukare
+col_one<-as.character(ifelse(unique(PCaxis$bee_species_baz) == 'L.huak','red','grey'))
+names(col_one)<-as.character(unique(PCaxis$bee_species_baz))
+col_one<-replace(col_one, 'L.hukare_Barry', 'green')
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_one)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA huakare")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#Leioproctus leioproctus
+col_leio<-col_baz
+col_leio<-replace(col_leio, 'L.fulv', 'grey')
+col_leio<-replace(col_leio, 'L.paahua', 'grey')
+col_leio<-replace(col_leio, 'L.marit_Barry', 'grey')
+col_leio<-replace(col_leio, 'L.pekanui_Barry', 'grey')
+col_leio<-replace(col_leio, 'L.mont', 'grey')
+col_leio<-replace(col_leio, 'L.hudsoni_Barry', 'grey')
+#shifting some colours around to make it easier to see
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_leio)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA leio leio")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#leioproctus nesocolletes
+col_neso<-col_baz
+col_neso<-replace(col_neso, 'L.keehua_Barry', 'grey')
+col_neso<-replace(col_neso, 'L.metal', 'grey')
+col_neso<-replace(col_neso, 'L.imat', 'grey')
+col_neso<-replace(col_neso, 'L.purp_Barry', 'grey')
+col_neso<-replace(col_neso, 'Vest', 'grey')
+col_neso<-replace(col_neso, 'L.kanap', 'grey')
+col_neso<-replace(col_neso, 'L.waipou_Barry', 'grey')
+col_neso<-replace(col_neso, 'L.bolt', 'grey')
+col_neso<-replace(col_neso, 'L.bolt_Barry', 'grey')
+col_neso<-replace(col_neso, 'L.pango', 'grey')
+col_neso<-replace(col_neso, 'L.pango_Barry', 'grey')
+col_neso<-replace(col_neso, 'L.huak', 'grey')
+col_neso<-replace(col_neso, 'L.hukare_Barry', 'grey')
+#shifting some colours around to make it easier to see
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_neso)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA leio nesi")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#having a look at sams unknowns
+col_one<-as.character(ifelse(unique(PCaxis$bee_species_baz) == 'L.unknown','red','grey'))
+#col_one
+names(col_one)<-as.character(unique(PCaxis$bee_species_baz))
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_one)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA uknowns")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')+ 
+  geom_text_repel(data=subset(PCaxis, bee_species_baz == 'L.unknown'),
+            aes(x=Comp1,y=Comp2,label=ID))
+
+#shape extremes in PCA
+#bring in links file for plotting
+bee_links<-read.table('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing/links_all_landmarks_sam.txt',sep=',',header=F)
+#find mean shape
+M<-mshape(beesgpa$coord)
+#find extremes of PC1 (max/min)
+PC<-PCA$x[,1]
+preds<-shape.predictor(beesgpa$coords,x=PC,Intercept=F,pred1=min(PC),pred2=max(PC))
+#PC1 min
+plotRefToTarget(M,preds$pred1,links=bee_links)
+#PC1 max
+plotRefToTarget(M,preds$pred2,links=bee_links)
+PC<-PCA$x[,2]
+preds<-shape.predictor(beesgpa$coords,x=PC,Intercept=F,pred1=min(PC),pred2=max(PC))
+#PC2 min
+plotRefToTarget(M,preds$pred1,links=bee_links)
+#PC2 max
+plotRefToTarget(M,preds$pred2,links=bee_links)
+
+```
+
+## Dropping first point to match other bee analyses
+It actually looks much better now with point 1 in so should do it with and without now
+
+```{r gpadropfirst}
+bees_removefirst <- bees[-1,,] 
+beesgpa<-gpagen(bees_removefirst)
+#looks more stable
+plot(beesgpa)
+#plot outliers
+plotOutliers(beesgpa$coords)
+#run PCA analysis
+PCA<-gm.prcomp(beesgpa$coords)
+#plot(PCA)
+#plot with legend
+PCaxis<-as.data.frame(PCA$x[,1:2])
+PCaxis<-rownames_to_column(PCaxis,var='ID')
+PCaxis$bee_species<-gsub('_.*','',PCaxis$ID)
+
+#set colours
+as.character(unique(PCaxis$bee_species))
+#18 species
+#original colours
+#col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink"))
+col<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink",'blue4',"lightpink","coral4","cadetblue","plum1","chartreuse1","lightgoldenrodyellow","grey","lightskyblue"))
+names(col)<-as.character(unique(PCaxis$bee_species))
+col
+#extract PC % from sdev
+PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
+PC2_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[2,1]*100,digits=2)
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species))+
+  theme_bw()+
+  scale_fill_manual(values=col)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#
+#colouring barry's ones seperatly
+#set colours
+PCaxis$bee_species_baz<-gsub('_[0-9].*','',PCaxis$ID)
+as.character(unique(PCaxis$bee_species))
+as.character(unique(PCaxis$bee_species_baz))
+#20 species
+col_baz<-as.character(c("dodgerblue2","tan1","gold1","springgreen4","orchid4","palegreen","firebrick1","cyan1","hotpink",'blue4',"lightpink","coral4","tomato","cadetblue","plum1","burlywood","chartreuse1","lightgoldenrodyellow","grey","lightskyblue"))
+names(col_baz)<-as.character(unique(PCaxis$bee_species_baz))
+col_baz
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_baz)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+
+#gods it confusing just comparing barrys to sams
+#boltoni
+col_one<-as.character(ifelse(unique(PCaxis$bee_species_baz) == 'L.bolt','red','grey'))
+names(col_one)<-as.character(unique(PCaxis$bee_species_baz))
+col_one<-replace(col_one, 'L.bolt_Barry', 'green')
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_one)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA boltoni")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+
+#pango
+col_one<-as.character(ifelse(unique(PCaxis$bee_species_baz) == 'L.pango','red','grey'))
+names(col_one)<-as.character(unique(PCaxis$bee_species_baz))
+col_one<-replace(col_one, 'L.pango_Barry', 'green')
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_one)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA pango")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#hukare
+col_one<-as.character(ifelse(unique(PCaxis$bee_species_baz) == 'L.huak','red','grey'))
+names(col_one)<-as.character(unique(PCaxis$bee_species_baz))
+col_one<-replace(col_one, 'L.hukare_Barry', 'green')
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_one)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA huakare")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#Leioproctus leioproctus
+col_leio<-col_baz
+col_leio<-replace(col_leio, 'L.fulv', 'grey')
+col_leio<-replace(col_leio, 'L.paahua', 'grey')
+col_leio<-replace(col_leio, 'L.marit_Barry', 'grey')
+col_leio<-replace(col_leio, 'L.pekanui_Barry', 'grey')
+col_leio<-replace(col_leio, 'L.mont', 'grey')
+col_leio<-replace(col_leio, 'L.hudsoni_Barry', 'grey')
+#shifting some colours around to make it easier to see
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_leio)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA leio leio")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#leioproctus nesocolletes
+col_neso<-col_baz
+col_neso<-replace(col_neso, 'L.keehua_Barry', 'grey')
+col_neso<-replace(col_neso, 'L.metal', 'grey')
+col_neso<-replace(col_neso, 'L.imat', 'grey')
+col_neso<-replace(col_neso, 'L.purp_Barry', 'grey')
+col_neso<-replace(col_neso, 'Vest', 'grey')
+col_neso<-replace(col_neso, 'L.kanap', 'grey')
+col_neso<-replace(col_neso, 'L.waipou_Barry', 'grey')
+col_neso<-replace(col_neso, 'L.bolt', 'grey')
+col_neso<-replace(col_neso, 'L.bolt_Barry', 'grey')
+col_neso<-replace(col_neso, 'L.pango', 'grey')
+col_neso<-replace(col_neso, 'L.pango_Barry', 'grey')
+col_neso<-replace(col_neso, 'L.huak', 'grey')
+col_neso<-replace(col_neso, 'L.hukare_Barry', 'grey')
+#shifting some colours around to make it easier to see
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_neso)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA leio nesi")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#having a look at sams unknowns
+col_one<-as.character(ifelse(unique(PCaxis$bee_species_baz) == 'L.unknown','red','grey'))
+#col_one
+names(col_one)<-as.character(unique(PCaxis$bee_species_baz))
+#plot
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species_baz))+
+  theme_bw()+
+  scale_fill_manual(values=col_one)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA uknowns")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')+ 
+  geom_text_repel(data=subset(PCaxis, bee_species_baz == 'L.unknown'),
+            aes(x=Comp1,y=Comp2,label=ID))
+
+#shape extremes in PCA
+#bring in links file for plotting
+bee_links<-read.table('C:/Users/hrlexd/Dropbox/PlantAndFood (1)/NativeBees/Bee_pictures/Sam_april/Forewing/links_all_landmarks_remove1_sam.txt',sep=',',header=F)
+#find mean shape
+M<-mshape(beesgpa$coord)
+#find extremes of PC1 (max/min)
+PC<-PCA$x[,1]
+preds<-shape.predictor(beesgpa$coords,x=PC,Intercept=F,pred1=min(PC),pred2=max(PC))
+#PC1 min
+plotRefToTarget(M,preds$pred1,links=bee_links)
+#PC1 max
+plotRefToTarget(M,preds$pred2,links=bee_links)
+PC<-PCA$x[,2]
+preds<-shape.predictor(beesgpa$coords,x=PC,Intercept=F,pred1=min(PC),pred2=max(PC))
+#PC2 min
+plotRefToTarget(M,preds$pred1,links=bee_links)
+#PC2 max
+plotRefToTarget(M,preds$pred2,links=bee_links)
+```
+
+## Within Leioproctus Leioproctus
+Just wanted to have a quick look just within leioproctus leiopructus as I notice on the PCA most of the variaiton is just between Neso species and Leio species
+
+
+```{r gpaleio}
+#just looking with in leioproctus (plus monticola)
+#fulvesencs and paahua are quite different
+#redo procrustes just with Leioproctus leioproctus species (plus monitola)
+#Sample_names
+bees_leioproctus <- bees[,,-c(2:6,11:15,31:35,53,56:61,72:73,79:83)] 
+bees_leioproctus <- bees_leioproctus[-1,,] 
+beesgpa_leio<-gpagen(bees_leioproctus)
+Sample_names_leio<-labels(bees_leioproctus)[[3]]
+Sample_names_leio<-gsub('.*\\\\','',Sample_names_leio)
+species_list_leio<-gsub('_.*','',Sample_names_leio)
+species_list_leio<-gsub('L.Kanap','L.kanap',species_list_leio)
+unique(species_list_leio)
+plot(beesgpa_leio)
+#plot outliers
+plotOutliers(beesgpa_leio$coords)
+#run PCA analysis
+PCA<-gm.prcomp(beesgpa_leio$coords)
+#summary(PCA)
+#plot(PCA)
+#plot with legend
+PCaxis<-as.data.frame(PCA$x[,1:2])
+PCaxis<-rownames_to_column(PCaxis,var='ID')
+PCaxis$bee_species<-gsub('_[0-9].*','',PCaxis$ID)
+
+PC1_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[1,1]*100,digits=2)
+PC2_per<-round(as.data.frame(PCA$sdev^2/sum(PCA$sdev^2))[2,1]*100,digits=2)
+
+ggplot(PCaxis,aes(x=Comp1,y=Comp2,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species))+
+  theme_bw()+
+  scale_fill_manual(values=col_baz)+
+  labs(colour='Species',x=paste0('PC1 ',PC1_per,'%'),y=paste0('PC1 ',PC2_per,'%'),title="PCA")+
+  geom_hline(yintercept=0, linetype='dotted', col = 'black')+
+  geom_vline(xintercept=0, linetype='dotted', col = 'black')
+#
+```
+
+## Shape variation
+Just plotting out the shape shift of each species
+
+```{r shapevar}
+#shape change species compared to average
+ref<-mshape(beesgpa$coords)
+species_list_barry
+
+#nesocoletes (note average is average across all Leioproctus sp. just grouped for veiwing)
+#paahua
+gpl.mn<-mshape(beesgpa$coords[,,31:35])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#fulv
+gpl.mn<-mshape(beesgpa$coords[,,c(11:15)])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#mont
+gpl.mn<-mshape(beesgpa$coords[,,2:6])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#mart barry
+gpl.mn<-mshape(beesgpa$coords[,,57:61])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#pekanui
+gpl.mn<-mshape(beesgpa$coords[,,72:73])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#hudsoni barry
+gpl.mn<-mshape(beesgpa$coords[,,53])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#leioproctus leioproctus
+#bolt
+gpl.mn<-mshape(beesgpa$coords[,,c(1,7:10)])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#bolt barry
+gpl.mn<-mshape(beesgpa$coords[,,c(46:50)])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#huakiwi
+gpl.mn<-mshape(beesgpa$coords[,,c(16:20,51:52)])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#huakiwi barry
+gpl.mn<-mshape(beesgpa$coords[,,54:55])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#imat
+gpl.mn<-mshape(beesgpa$coords[,,21:25])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#kanap
+gpl.mn<-mshape(beesgpa$coords[,,26:30])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#pango
+gpl.mn<-mshape(beesgpa$coords[,,36:40])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#pango barry
+gpl.mn<-mshape(beesgpa$coords[,,68:71])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#vest
+gpl.mn<-mshape(beesgpa$coords[,,41:45])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#purp
+gpl.mn<-mshape(beesgpa$coords[,,74:78])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#waiponamu barry
+gpl.mn<-mshape(beesgpa$coords[,,84:88])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#keehua barry
+gpl.mn<-mshape(beesgpa$coords[,,56])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+#metalicus
+gpl.mn<-mshape(beesgpa$coords[,,62:67])
+#plotRefToTarget(M1=ref,M2=gpl.mn,mag=2)
+plotRefToTarget(M1=ref,M2=gpl.mn,mag=2,links=bee_links)
+
+#
+```
+
+## Running some tests
+Im not familar with geomorph so this is largely taken from the tutorial online
+
+## Relationship between size and shape
+
+```{R geomorphstats}
+#check if there is a relationship between size and shape
+#just having a look at raw csize
+#metal, bolt kanap seem largest in general for forewing
+size<-as.data.frame(beesgpa$Csize)
+arrange(size,desc(size$`beesgpa$Csize`)) #%>% print(n=nrow(.))
+gdf<-geomorph.data.frame(beesgpa,species=species_list_barry)
+fit.size<-procD.lm(coords~log(Csize), data = gdf, print.progress=F)
+summary(fit.size)
+#is a significant relationship between size and shape
+#visiualise
+#plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='PredLine',col=as.factor(species_list),pch=19)
+#plot with legend etc
+p<-plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='PredLine')
+p<-cbind(as.data.frame(p$plot_args$x),as.data.frame(p$plot_args$y))
+names(p)[names(p) == 'p$plot_args$x'] <- 'PredLine'
+names(p)[names(p) == 'p$plot_args$y'] <- 'PC1'
+p<-rownames_to_column(p,var='ID')
+p$bee_species<-gsub('_[0-9].*','',p$ID)
+
+ggplot(p,aes(x=PredLine,y=PC1,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species))+
+  theme_bw()+
+  scale_fill_manual(values=col_baz)+
+  labs(colour='Species',x='Predictor',y='PC1 for fitted values')
+
+#same thing here:
+#plot(fit.size,type='regression',reg.type="PredLine", predictor =log(gdf$Csize))
+#first principal component scores fitted values - PredLine
+
+#regression scores-standardised regression shapes 
+#plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='RegScore',col=as.factor(species_list),pch=19)
+#plot with legend etc
+p<-plotAllometry(fit.size,size=gdf$Csize, logsz=TRUE,method='RegScore')
+p<-cbind(as.data.frame(p$plot_args$x),as.data.frame(p$plot_args$y))
+names(p)[names(p) == 'p$plot_args$x'] <- 'PredLine'
+names(p)[names(p) == 'V1'] <- 'RegScore'
+p<-rownames_to_column(p,var='ID')
+p$bee_species<-gsub('_[0-9].*','',p$ID)
+
+ggplot(p,aes(x=PredLine,y=RegScore,colour = bee_species))+
+  geom_point(size=3,colour="grey",shape=21,aes(fill=bee_species))+
+  theme_bw()+
+  scale_fill_manual(values=col_baz)+
+  labs(colour='Species',x='Predictor',y='Regression Score')
+
+#partial least squares for relationship between shape and size
+PLS<-two.b.pls(log(gdf$Csize),gdf$coords,print.progress=F)
+PLS
+#
+```
+
+## Relationship between size, shape and species
+using Procrustes ANOVA/regression. Not convienced that I have this right and that this is the best way in regards to the posthoc pairwise tests. There is another function which I havent really explored that might be better for this. 
+
+```{R geomorphstats2}
+#look at the influence of shape, size and species
+fit.common<-procD.lm(coords~log(Csize)+species,data=gdf)
+summary(fit.common)
+PW<-pairwise(fit.common,groups=species_list_barry)
+summary(PW)
+#relationship between size and species
+fit1<-procD.lm(log(gdf$Csize)~species_list_barry)
+summary(fit1)
+PW<-pairwise(fit1,groups=species_list_barry)
+summary(PW)
+#relationship between shape and species
+fit2<-procD.lm(gdf$coords~species_list_barry)
+summary(fit2)
+PW<-pairwise(fit2,groups=species_list_barry)
+summary(PW)
+#interaction model - shape differ between species, while accounting for shape co varying with size
+#not convinced I have this model right, I think its an over simplification
+fit3<-procD.lm(gdf$coords ~log(gdf$Csize)*species_list_barry)
+summary(fit3)
+#posthoc test between groups
+PW<-pairwise(fit3,groups=species_list_barry)
+summary(PW)
+#
+```
+
